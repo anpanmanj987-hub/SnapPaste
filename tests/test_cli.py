@@ -7,11 +7,14 @@ import unittest
 
 
 class CLITests(unittest.TestCase):
-    def run_cli(self, *args):
+    def run_cli(self, *args, encoding=None):
         root = Path(__file__).resolve().parents[1]
         environment = dict(os.environ, PYTHONPATH=str(root / "src"))
+        if encoding is not None:
+            environment["PYTHONIOENCODING"] = encoding
         return subprocess.run([sys.executable, "-m", "snappaste", *args],
-                              capture_output=True, text=True, env=environment, timeout=5)
+                              capture_output=True, text=True, encoding=encoding,
+                              env=environment, timeout=5)
 
     def test_help_describes_explicit_dry_run_and_lan_options(self):
         result = self.run_cli("--help")
@@ -19,10 +22,24 @@ class CLITests(unittest.TestCase):
         self.assertIn("--dry-run", result.stdout)
         self.assertIn("--advertise", result.stdout)
 
+    def test_help_succeeds_with_legacy_or_ascii_output(self):
+        for encoding in ("cp1252", "ascii"):
+            with self.subTest(encoding=encoding):
+                result = self.run_cli("--help", encoding=encoding)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("--dry-run", result.stdout)
+                self.assertIn("--advertise", result.stdout)
+                self.assertNotIn("UnicodeEncodeError", result.stderr)
+
+    def test_utf8_help_preserves_japanese(self):
+        result = self.run_cli("--help", encoding="utf-8")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("スマホの写真", result.stdout)
+
     def test_version_is_available_without_server(self):
         result = self.run_cli("--version")
         self.assertEqual(result.returncode, 0)
-        self.assertIn("0.1.0a2", result.stdout)
+        self.assertIn("0.1.0a3", result.stdout)
 
     @unittest.skipIf(sys.platform == "win32", "native mode is valid on Windows")
     def test_other_platform_requires_explicit_dry_run(self):

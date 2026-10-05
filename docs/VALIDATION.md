@@ -1,5 +1,11 @@
 # Validation / 検証
 
+## 0.1.0a3 console-encoding fix on 2026-10-05
+
+The new regression reproduced `UnicodeEncodeError` under CP1252 and ASCII before the fix. CLI startup now preserves each output encoding and escapes characters it cannot represent; UTF-8 retains Japanese text. This applies to both stdout and stderr.
+
+On macOS arm64, Python 3.12.14, Pillow 12.3.0 and qrcode 8.2, all **48 unittest cases passed with zero skips** after installing into a fresh virtual environment. GitHub CI results are available in [Actions](https://github.com/anpanmanj987-hub/SnapPaste/actions/workflows/ci.yml). Native Windows clipboard and physical-phone/LAN checks below remain open. Earlier records are historical.
+
 ## 0.1.0a2 post-review checks on 2026-10-05
 
 Observed in the fix session: Linux x86_64, Python 3.12.14, Pillow 12.3.0 (PanelPop/SnapPaste), qrcode 8.2, Node 24.19.0 (RoomPing), setuptools 84.0.0, build 1.6.1. **46 Python unittest cases passed, zero failures and zero skips.** Across all three projects: 120 tests.
@@ -29,14 +35,14 @@ From the source checkout without installation:
 PYTHONPATH=src python -m unittest discover -s tests -v
 ```
 
-The suite currently has 46 unittest cases; subtests add orientation, format, width and invalid-value variations.
+The suite currently has 48 unittest cases; subtests add orientation, format, width and invalid-value variations.
 
 | Area | Cases | Observable contract |
 |---|---:|---|
 | Image processing | 12 | All eight EXIF orientations, metadata absence in normalized/encoded output, resize/no enlargement, RGBA/palette transparency, JPEG grayscale/CMYK/WebP, corruption/truncation, size/pixel limits, animation |
 | DIB | Included above | Widths 1–5, independently expected BGR rows/padding/header, decoded top-row color |
 | Win32 writer boundary | 9 | High-bit handles, valid HWND, preallocation, ownership transfer, bounded contention retry, allocation/lock/empty/set/close failure |
-| CLI | 5 | Help/version, explicit other-OS dry-run, explicit wildcard advertised IPv4, invalid numeric/NaN settings rejected before bind |
+| CLI | 7 | Help/version, explicit other-OS dry-run, explicit wildcard advertised IPv4, invalid numeric/NaN settings rejected before bind |
 | Upload IO deadline | 4 | Exact body bytes, premature EOF, trickle deadline and final-read overrun using a deterministic clock and stream boundary |
 | Malformed auth | 1 | Non-ASCII header causes 401, not a handler exception |
 | Real HTTP | 15 | Raw upload, dry-run dimensions/flags, token/Host/Origin rejection, preflight refusal, capacity/length/timeout, busy/clipboard error, fixed local assets/security headers, traversal |

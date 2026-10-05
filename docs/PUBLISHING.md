@@ -14,7 +14,7 @@ This alpha is source-ready; creating a remote repository, publishing a release o
 python -m pip install build
 python -m build
 python -m venv /tmp/snappaste-release-check
-/tmp/snappaste-release-check/bin/python -m pip install dist/snappaste-0.1.0a2-py3-none-any.whl
+/tmp/snappaste-release-check/bin/python -m pip install dist/snappaste-0.1.0a3-py3-none-any.whl
 cd /tmp
 /tmp/snappaste-release-check/bin/python -m snappaste --help
 ```
@@ -25,7 +25,7 @@ Check that the wheel contains `index.html`, `style.css`, `app.js` and `api.mjs`,
 
 ## GitHub
 
-Create the intended repository using the owner's chosen account/name. Push the source and wait for the CI matrix/package job. Keep the first release labelled prerelease `0.1.0a2` and summarize supported formats, explicit LAN/dry-run setup and the remaining Windows/device checks. Attach built distributions only after the installed-package check succeeds.
+Create the intended repository using the owner's chosen account/name. Push the source and wait for the CI matrix/package job. Keep the first release labelled prerelease `0.1.0a3` and summarize supported formats, explicit LAN/dry-run setup and the remaining Windows/device checks. Attach built distributions only after the installed-package check succeeds.
 
 ## PyPI
 

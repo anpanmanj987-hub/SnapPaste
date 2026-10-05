@@ -1,3 +1,13 @@
+# SnapPaste 0.1.0a3 release notes
+
+MIT-licensed alpha release.
+
+- Fix Japanese help and status output crashing under CP1252 or ASCII, including redirected Windows output. Unsupported characters are escaped without changing the output encoding. UTF-8 output keeps Japanese text.
+- Add legacy/ASCII and UTF-8 CLI regression coverage. All 48 local tests pass.
+- Version metadata and installation examples now identify 0.1.0a3.
+
+See [validation](VALIDATION.md) and [GitHub Actions](https://github.com/anpanmanj987-hub/SnapPaste/actions/workflows/ci.yml). Physical Windows clipboard, phones and LAN remain unverified.
+
 # Snappaste 0.1.0a2 release notes
 
 MIT-licensed alpha source release. See README and VALIDATION.md for operating assumptions and evidence.

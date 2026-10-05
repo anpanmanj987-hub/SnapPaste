@@ -9,6 +9,11 @@ from .server import ServerConfig, make_server
 
 
 def main(argv=None) -> int:
+    # Redirected Windows output can use an encoding that cannot represent Japanese.
+    # Keep that encoding so consumers can still decode it, but escape unsupported text.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="backslashreplace")
     parser = argparse.ArgumentParser(description="SnapPaste: スマホの写真をWindowsの画像クリップボードへ送信します。")
     parser.add_argument("--version", action="version", version=f"SnapPaste {__version__}")
     parser.add_argument("--host", default="127.0.0.1", help="待受IPv4 (既定:127.0.0.1)。LAN公開は明示してください")

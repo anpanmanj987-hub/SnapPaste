@@ -2,9 +2,9 @@
 
 Send a photo from your phone browser to the Windows image clipboard. Take or select a photo, check the local preview, press Send, then paste in your PC application with `Ctrl+V`. No phone app or external image processing service is required.
 
-**0.1.0a2 / MIT / alpha.** [日本語](README.md)
+**0.1.0a3 / MIT / alpha.** [日本語](README.md)
 
-Version 0.1.0a2 is the post-review source release. [Validation](docs/VALIDATION.md) separates the current Linux checks from historical 0.1.0a1 macOS evidence.
+Version 0.1.0a3 fixes Japanese CLI output crashing with legacy or ASCII encodings. See [validation](docs/VALIDATION.md) for automated checks and remaining physical-device checks.
 
 ## Install and run
 
