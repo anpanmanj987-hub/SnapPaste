@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>SnapPaste — 写真を、PCへ。</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div class="wordmark"><span class="brand-mark" aria-hidden="true">S</span> SnapPaste</div>
+      <span class="version">ALPHA 0.1</span>
+    </header>
+    <section class="intro" aria-labelledby="title">
+      <p class="eyebrow">FROM YOUR PHONE, TO YOUR PC</p>
+      <h1 id="title">写真を、<br>PCへ。</h1>
+      <p class="lead">撮る。確かめる。送る。<br>あとはPCで貼り付けるだけ。</p>
+    </section>
+    <section class="connection" aria-label="PCとの接続">
+      <span class="status-dot" id="connectionDot" aria-hidden="true"></span>
+      <div><strong id="connectionTitle">接続を確認中</strong><p id="connectionDetail">PCの受信ホストを確認しています。</p></div>
+      <button type="button" class="text-button" id="reconnect">再接続</button>
+    </section>
+    <aside id="dryRun" class="notice" hidden><strong>dry-run / 動作確認モード</strong><span>画像処理と転送を確認できます。PCのクリップボードは更新しません。</span></aside>
+    <section class="workspace" aria-labelledby="photoTitle">
+      <div class="section-heading"><h2 id="photoTitle"><span>01</span> 写真を選ぶ</h2><span class="formats">JPEG / PNG / WebP</span></div>
+      <div class="pickers">
+        <label class="picker" for="cameraInput">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="4"/></svg>
+          <strong>写真を撮る</strong><span>スマホのカメラを開く</span>
+          <input id="cameraInput" type="file" accept="image/*" capture="environment">
+        </label>
+        <label class="picker" for="galleryInput">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></svg>
+          <strong>写真を選ぶ</strong><span>ライブラリから選ぶ</span>
+          <input id="galleryInput" type="file" accept="image/*">
+        </label>
+      </div>
+      <div class="preview" id="previewBox">
+        <div class="placeholder" id="placeholder"><span aria-hidden="true">＋</span><p>ここにプレビューが表示されます</p><small>選んだだけでは送信されません。</small></div>
+        <img id="previewImage" alt="送信する写真のプレビュー" hidden>
+      </div>
+      <div class="selection"><p id="selectionDetail">写真はまだ選ばれていません</p><button id="clear" class="text-button" type="button" hidden>取り消す</button></div>
+      <div class="section-heading send-heading"><h2><span>02</span> 確認して送る</h2></div>
+      <p class="processing-note" id="processingNote">向きを補正し、長辺1920px以内に縮小します。メタデータを除去し、透過部分は白背景になります。</p>
+      <button id="send" class="send-button" type="button" disabled><span id="sendLabel">PCへ送信する</span><span aria-hidden="true">↗</span></button>
+      <p id="result" class="result" role="status" aria-live="polite">写真を選び、プレビューを確認してください。</p>
+    </section>
+    <section class="finish" aria-label="PCで貼り付け"><span class="step">03</span><div><h2 id="pasteTitle">PCで貼り付ける</h2><p id="pasteNote">コピー完了後、貼り付けたいアプリで <kbd>Ctrl</kbd> + <kbd>V</kbd>。</p></div></section>
+    <footer><p>同じネットワーク内で使う、写真の受け渡し。</p><p>画像は既定では保存しません。LAN通信は平文HTTPです。信頼できるネットワークでご利用ください。</p><small>SnapPaste · MIT License · 0.1.0a2</small></footer>
+  </main>
+</body>
+</html>

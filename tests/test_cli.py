@@ -1,0 +1,46 @@
+"""CLI contracts catch unsafe implicit LAN/native startup and invalid limits."""
+import os
+from pathlib import Path
+import subprocess
+import sys
+import unittest
+
+
+class CLITests(unittest.TestCase):
+    def run_cli(self, *args):
+        root = Path(__file__).resolve().parents[1]
+        environment = dict(os.environ, PYTHONPATH=str(root / "src"))
+        return subprocess.run([sys.executable, "-m", "snappaste", *args],
+                              capture_output=True, text=True, env=environment, timeout=5)
+
+    def test_help_describes_explicit_dry_run_and_lan_options(self):
+        result = self.run_cli("--help")
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("--dry-run", result.stdout)
+        self.assertIn("--advertise", result.stdout)
+
+    def test_version_is_available_without_server(self):
+        result = self.run_cli("--version")
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("0.1.0a2", result.stdout)
+
+    @unittest.skipIf(sys.platform == "win32", "native mode is valid on Windows")
+    def test_other_platform_requires_explicit_dry_run(self):
+        result = self.run_cli()
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--dry-run", result.stderr)
+
+    def test_wildcard_bind_requires_usable_advertised_ip(self):
+        result = self.run_cli("--dry-run", "--host", "0.0.0.0")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--advertise", result.stderr)
+
+    def test_limits_rejected_before_server_creation(self):
+        for args in [("--max-edge", "0"), ("--port", "70000"), ("--timeout", "nan")]:
+            with self.subTest(args=args):
+                result = self.run_cli("--dry-run", *args)
+                self.assertEqual(result.returncode, 2)
+
+
+if __name__ == "__main__":
+    unittest.main()
