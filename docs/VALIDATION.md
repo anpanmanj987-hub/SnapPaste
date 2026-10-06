@@ -21,6 +21,10 @@ The second reader shows the image outlives the host process and is visible to or
 
 The same session found that rejections (wrong token after a restart, wrong Origin, busy, too large) intermittently reached the client as a connection reset on Windows instead of the error reply: 4 of 5 full test runs failed before the fix. The host now discards a bounded remainder of the unread body before closing. 5 of 5 runs passed afterwards.
 
+## English interface — 2026-10-06 (0.1.0a5)
+
+Headless Edge 154 on Windows 11 at a phone-sized viewport: connected, selected a photo and previewed it in English and Japanese. In English no Japanese text remained apart from the language toggle; no script errors. The toggle switched the page in place and a reload without `?lang` kept the choice. This check found that the page returned 404 when its URL carried `?lang=en`; fixed and covered by a test.
+
 ## Earlier checks (0.1.0a1–a3, macOS and Linux)
 
 A desktop browser at a 390 px viewport connected to a dry-run host, previewed a selected 960×640 PNG before sending, sent it over real HTTP and showed completion with "clipboard not updated". Wheel and sdist builds were installed outside the checkout and served every static route. 0.1.0a3 fixed `--help` crashing under CP1252 and ASCII console encodings.
@@ -31,15 +35,16 @@ A desktop browser at a 390 px viewport connected to a dry-run host, previewed a 
 python -m unittest discover -s tests -v
 ```
 
-49 cases (one is skipped on Windows because it checks the non-Windows `--dry-run` requirement):
+59 cases (one is skipped on Windows because it checks the non-Windows `--dry-run` requirement):
 
 | Area | Cases | What they check |
 |---|---:|---|
 | Image processing | 12 | All eight EXIF orientations, no metadata in the output, resize without enlarging, transparency on white, grayscale/CMYK/WebP, corrupt and truncated files, size and pixel limits, animation |
 | DIB | (in the above) | Widths 1–5, BGR rows and padding, header fields |
 | Win32 writer | 9 | High-bit handles, preallocation, ownership transfer, bounded contention retries, every native failure path |
-| CLI | 7 | Help/version, legacy console encodings, explicit dry-run off Windows, wildcard bind needs `--advertise`, invalid limits |
+| CLI | 8 | Help/version in Japanese and English, legacy console encodings, explicit dry-run off Windows, wildcard bind needs `--advertise`, invalid limits |
 | Upload deadline | 4 | Exact bytes, premature EOF, trickling peers, a last chunk after the deadline |
+| Language | 9 | Matching Japanese/English keys, every used key defined, replies follow `Accept-Language`, CLI language rules, pages with a query string |
 | Real HTTP | 17 | Upload, dry-run flags, token/Host/Origin rejection, reset-free rejections, preflight, limits, timeouts, busy and clipboard errors, static assets and security headers, path traversal |
 
 GitHub Actions runs the suite on Ubuntu, Windows and macOS with Python 3.10, 3.12 and 3.14 and builds the wheel and sdist. The Win32 writer tests use a fake OS boundary; the real clipboard path is covered by the hardware check above.

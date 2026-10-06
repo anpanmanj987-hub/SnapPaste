@@ -11,9 +11,8 @@ SnapPaste sends a photo from your phone straight to the clipboard of a Windows P
 
 [日本語 README](README.md)
 
-![Connected (left) and previewing a photo before sending (right)](docs/images/snappaste.png)
+![Connected (left) and previewing a photo before sending (right)](docs/images/snappaste.en.png)
 
-<sub>The interface is in Japanese.</sub>
 
 ## Features
 
@@ -21,6 +20,7 @@ SnapPaste sends a photo from your phone straight to the clipboard of a Windows P
 - **Preview first**: choosing a photo never sends it. Check the preview, then press Send.
 - **Ready to paste**: EXIF orientation is applied, the long edge is reduced to 1920 px, and transparency becomes white.
 - **No location data left behind**: the image is rebuilt from its pixels, so EXIF, GPS, XMP and ICC metadata never reach the pasted image.
+- **English and Japanese**: the page follows your browser language and the terminal follows the PC's language (set `SNAPPASTE_LANG=en` or `ja` to choose); the page also has a toggle.
 - **Stays local**: nothing goes to external services, and by default nothing is written to disk.
 
 ## Quick start
@@ -29,14 +29,14 @@ Requires Windows 10/11 and Python 3.10 or newer. In PowerShell:
 
 ```powershell
 py -m venv snappaste-env
-snappaste-env\Scripts\python -m pip install https://github.com/anpanmanj987-hub/SnapPaste/archive/refs/tags/v0.1.0a4.zip
+snappaste-env\Scripts\python -m pip install https://github.com/anpanmanj987-hub/SnapPaste/archive/refs/tags/v0.1.0a5.zip
 snappaste-env\Scripts\python -m snappaste --host 192.168.1.20
 ```
 
 Replace `192.168.1.20` with your PC's address (the "IPv4 Address" line of `ipconfig`). A QR code appears in the terminal; scan it with a phone on the same Wi-Fi.
 
 1. Take a photo or pick one from the library, and check the preview.
-2. Press "PCへ送信する" (send to PC).
+2. Press "Send to PC".
 3. When the page says the image was copied, press `Ctrl+V` in the PC app where you want it.
 
 `Ctrl+C` stops the host. The QR code and join URL carry a secret token valid only while this host runs; do not share them. Restarting changes the token.
@@ -66,7 +66,7 @@ On macOS and Linux, start with `--dry-run`. It transfers, orients, resizes and b
 
 ```sh
 python3 -m venv snappaste-env
-snappaste-env/bin/python -m pip install https://github.com/anpanmanj987-hub/SnapPaste/archive/refs/tags/v0.1.0a4.zip
+snappaste-env/bin/python -m pip install https://github.com/anpanmanj987-hub/SnapPaste/archive/refs/tags/v0.1.0a5.zip
 snappaste-env/bin/python -m snappaste --dry-run
 ```
 
@@ -78,7 +78,7 @@ snappaste-env/bin/python -m snappaste --dry-run
 
 ## Verification status
 
-- **Automated tests**: 49 cases, run by GitHub Actions on Windows, macOS and Linux with Python 3.10, 3.12 and 3.14.
+- **Automated tests**: 59 cases, run by GitHub Actions on Windows, macOS and Linux with Python 3.10, 3.12 and 3.14.
 - **Real Windows**: on 2026-10-06 on Windows 11, a photo sent over HTTP landed on the clipboard with its orientation applied; another app (.NET) read the same image after SnapPaste had exited; and while the PC was locked, SnapPaste reported a failure instead of success.
 - **Not yet verified**: sending from a real phone over a LAN, and pasting into specific apps such as Paint, Word or PowerPoint.
 

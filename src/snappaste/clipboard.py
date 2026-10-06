@@ -9,6 +9,8 @@ import sys
 import threading
 import time
 
+from .messages import cli_language, text
+
 
 class ClipboardError(RuntimeError):
     pass
@@ -20,7 +22,7 @@ class DryRunClipboard:
     def write(self, data: bytes) -> None:
         """Validate that processing produced data, without saving or copying it."""
         if not data:
-            raise ClipboardError("画像データが空です。")
+            raise ClipboardError(text("empty_data", cli_language()))
 
     def close(self) -> None:
         pass
@@ -61,7 +63,7 @@ class NativeClipboardWriter:
 
     def write(self, data: bytes) -> None:
         if not data:
-            raise ClipboardError("画像データが空です。")
+            raise ClipboardError(text("empty_data", cli_language()))
         memory = self.kernel32.GlobalAlloc(2, len(data))  # GMEM_MOVEABLE
         if not memory:
             raise self._error("GlobalAlloc")
@@ -86,7 +88,7 @@ class NativeClipboardWriter:
                 if attempt + 1 < self.attempts:
                     time.sleep(self.retry_delay)
             if not opened:
-                raise ClipboardError("クリップボードを開けません。PCがロック中か、他のアプリが使用中です。")
+                raise ClipboardError(text("clipboard_unavailable", cli_language()))
             if not self.user32.EmptyClipboard():
                 raise self._error("EmptyClipboard")
             if not self.user32.SetClipboardData(8, memory):  # CF_DIB
@@ -118,7 +120,7 @@ class WindowsClipboard:
 
     def __init__(self):
         if sys.platform != "win32":
-            raise ClipboardError("Windows以外では --dry-run を指定してください。")
+            raise ClipboardError(text("windows_only", cli_language()))
         self._jobs = queue.Queue(maxsize=1)
         self._ready = threading.Event()
         self._stop = threading.Event()
@@ -127,9 +129,9 @@ class WindowsClipboard:
         self._thread.start()
         if not self._ready.wait(5):
             self._stop.set()
-            raise ClipboardError("Windowsクリップボードの初期化がタイムアウトしました。")
+            raise ClipboardError(text("init_timeout", cli_language()))
         if self._startup_error:
-            raise ClipboardError("Windowsクリップボードを初期化できませんでした。") from self._startup_error
+            raise ClipboardError(text("init_failed", cli_language())) from self._startup_error
 
     def _run(self):
         hwnd = None
@@ -188,15 +190,15 @@ class WindowsClipboard:
 
     def write(self, data: bytes) -> None:
         if self._stop.is_set() or not self._thread.is_alive():
-            raise ClipboardError("クリップボードの受信処理が停止しています。")
+            raise ClipboardError(text("worker_stopped", cli_language()))
         job = _WriteJob(data)
         try:
             self._jobs.put_nowait(job)
         except queue.Full as error:
-            raise ClipboardError("クリップボードの処理中です。再送してください。") from error
+            raise ClipboardError(text("worker_busy", cli_language())) from error
         if not job.done.wait(5):
             job.cancelled = True
-            raise ClipboardError("クリップボードの処理がタイムアウトしました。PCで状態を確認してください。")
+            raise ClipboardError(text("worker_timeout", cli_language()))
         if job.error:
             raise ClipboardError(str(job.error)) from job.error
 

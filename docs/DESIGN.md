@@ -38,6 +38,10 @@ If `EmptyClipboard` succeeds and a subsequent native call fails, the previous cl
 
 Dry-run produces the same normalized DIB and discards it. It neither writes any OS clipboard nor saves a processed image. Both `/api/status` and upload success responses identify dry-run.
 
+## Languages
+
+Every message people see is keyed in `messages.py` (Japanese/English pairs) for the host and the command line, and in `static/i18n.mjs` for the page. `ImageValidationError` carries a key, so the same rejection is worded in each client's language. The host reads the first `ja` or `en` tag of `Accept-Language` and defaults to English; the page sends its own language. The command line uses `SNAPPASTE_LANG`, then the POSIX locale variables, then the Windows display language.
+
 ## HTTP policy and bounds
 
 The CLI defaults to loopback IPv4 and port 8766. LAN listening is explicit. Binding `0.0.0.0` requires a usable `--advertise` IPv4 for the exact accepted authority. No network discovery uses an external service. IPv6 and DNS names are outside the first version.

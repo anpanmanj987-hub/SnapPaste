@@ -15,6 +15,7 @@ import time
 from . import __version__
 from .images import MAX_BYTES, MAX_PIXELS, MAX_EDGE, normalize_image, dib_bytes, ImageValidationError
 from .clipboard import ClipboardError
+from .messages import language, text
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,7 @@ class ServerConfig:
 ASSETS = {"/": ("index.html", "text/html; charset=utf-8"),
           "/app.js": ("app.js", "text/javascript; charset=utf-8"),
           "/api.mjs": ("api.mjs", "text/javascript; charset=utf-8"),
+          "/i18n.mjs": ("i18n.mjs", "text/javascript; charset=utf-8"),
           "/style.css": ("style.css", "text/css; charset=utf-8")}
 
 
@@ -185,13 +187,17 @@ class RequestHandler(BaseHTTPRequestHandler):
             except (BrokenPipeError, ConnectionResetError, socket.timeout):
                 pass
 
-    def _error(self, status, message):
-        self._reply(status, {"ok": False, "message": message})
+    def _lang(self):
+        # The page sends its interface language; replies follow it (English otherwise).
+        return language(self.headers.get("Accept-Language") if self.headers else None)
+
+    def _error(self, status, key):
+        self._reply(status, {"ok": False, "message": text(key, self._lang())})
 
     def _host_ok(self):
         hosts = self.headers.get_all("Host", [])
         if hosts != [self.server.authority]:
-            self._error(403, "接続先が一致しません。PCのQRコードから接続してください。")
+            self._error(403, "host_mismatch")
             return False
         return True
 
@@ -200,10 +206,10 @@ class RequestHandler(BaseHTTPRequestHandler):
             return False
         supplied = self.headers.get_all("X-SnapPaste-Token", [])
         if len(supplied) != 1 or not supplied[0].isascii() or not secrets.compare_digest(supplied[0], self.server.token):
-            self._error(401, "接続コードが無効です。PCの新しいQRコードから接続してください。")
+            self._error(401, "bad_token")
             return False
         if mutate and self.headers.get_all("Origin", []) != [self.server.origin]:
-            self._error(403, "この送信元からは操作できません。PCのQRコードから接続してください。")
+            self._error(403, "bad_origin")
             return False
         return True
 
@@ -217,9 +223,10 @@ class RequestHandler(BaseHTTPRequestHandler):
             return
         if not self._host_ok():
             return
-        asset = ASSETS.get(self.path)
+        # Pages may carry a query such as ?lang=en; assets are matched on the path only.
+        asset = ASSETS.get(self.path.split("?", 1)[0])
         if not asset:
-            self._error(404, "ページが見つかりません。")
+            self._error(404, "not_found")
             return
         name, mime = asset
         self._reply(200, files("snappaste").joinpath("static", name).read_bytes(), mime)
@@ -228,17 +235,17 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.do_GET()
 
     def do_OPTIONS(self):
-        self._error(403, "外部ページからの操作は許可していません。")
+        self._error(403, "no_cors")
 
     def do_POST(self):
         if not self._authorized(mutate=True):
             return
         if self.path != "/api/upload":
-            self._error(404, "送信先が見つかりません。")
+            self._error(404, "no_endpoint")
             return
         lengths = self.headers.get_all("Content-Length", [])
         if self.headers.get_all("Transfer-Encoding") or len(lengths) != 1:
-            self._error(411, "画像サイズを指定した送信が必要です。")
+            self._error(411, "length_required")
             return
         try:
             raw = lengths[0]
@@ -246,29 +253,29 @@ class RequestHandler(BaseHTTPRequestHandler):
                 raise ValueError
             length = int(raw)
         except ValueError:
-            self._error(400, "画像サイズが不正です。")
+            self._error(400, "bad_length")
             return
         if length < 1:
-            self._error(400, "画像を選択してください。")
+            self._error(400, "no_image")
             return
         if length > self.server.config.max_bytes:
-            self._error(413, "画像の容量が上限を超えています。")
+            self._error(413, "upload_too_large")
             return
         if not self.server.processing.acquire(blocking=False):
-            self._error(429, "別の画像を処理中です。少し待って再送してください。")
+            self._error(429, "busy")
             return
         try:
             self.unread = 0  # A failed read means a broken or slow peer: do not wait for it again.
             try:
                 content = read_upload(self.rfile, self.connection, length, self.server.config.socket_timeout)
             except (socket.timeout, OSError):
-                self._error(408, "画像の受信がタイムアウトしました。通信を確認して再送してください。")
+                self._error(408, "receive_timeout")
                 return
             except EOFError:
-                self._error(400, "画像を最後まで受信できませんでした。")
+                self._error(400, "incomplete")
                 return
             if len(content) != length:
-                self._error(400, "画像を最後まで受信できませんでした。")
+                self._error(400, "incomplete")
                 return
             config = self.server.config
             image = normalize_image(content, max_bytes=config.max_bytes,
@@ -277,15 +284,14 @@ class RequestHandler(BaseHTTPRequestHandler):
             dry_run = self.server.clipboard.mode == "dry-run"
             self._reply(200, {"ok": True, "dry_run": dry_run, "clipboard_updated": not dry_run,
                              "width": image.width, "height": image.height,
-                             "message": ("画像を処理しました。dry-runのためクリップボードは更新していません。"
-                                         if dry_run else "PCのクリップボードに画像をコピーしました。PCで貼り付けてください。")})
+                             "message": text("processed_dry_run" if dry_run else "copied", self._lang())})
         except ImageValidationError as error:
             status = 413 if error.code == "too_large" else 415 if error.code == "unsupported" else 422
-            self._error(status, str(error))
+            self._error(status, error.key)
         except ClipboardError:
-            self._error(503, "クリップボードへコピーできませんでした。PCがロック中でないか確認し、少し待って再送してください。")
+            self._error(503, "clipboard_failed")
         except Exception:
-            self._error(500, "画像を処理できませんでした。別の画像で再試行してください。")
+            self._error(500, "processing_failed")
         finally:
             self.server.processing.release()
 

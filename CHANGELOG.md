@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0a5 — 2026-10-06
+
+- English interface. The phone page follows the browser language (Japanese when it comes first, English otherwise), with a toggle that is remembered and a `?lang=ja|en` override. Replies from the host, including image-validation errors, follow the page's `Accept-Language`.
+- The command line speaks English or Japanese: `SNAPPASTE_LANG`, then `LC_ALL`/`LC_MESSAGES`/`LANG`, then the Windows display language.
+- Fix: the page did not load when its URL carried a query string such as `?lang=en`; static assets are now matched on the path only.
+- Tests check that both languages define the same keys, that every key used by the page and the host exists, and the language rules.
+
 ## 0.1.0a4 — 2026-10-06
 
 - Fix: rejected uploads on Windows (wrong token after a restart, wrong Origin, busy, too large) could reach the phone as a connection reset, so the page said it could not reach the PC instead of showing the reason. The host now discards a bounded remainder of the unread body before closing.

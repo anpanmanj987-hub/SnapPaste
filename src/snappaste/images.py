@@ -6,6 +6,8 @@ import struct
 import warnings
 from PIL import Image, ImageOps, UnidentifiedImageError
 
+from .messages import text
+
 MAX_BYTES = 25 * 1024 * 1024
 MAX_PIXELS = 50_000_000
 MAX_EDGE = 1920
@@ -13,9 +15,10 @@ FORMATS = ("JPEG", "PNG", "WEBP")
 
 
 class ImageValidationError(ValueError):
-    def __init__(self, message: str, code: str = "invalid_image"):
-        super().__init__(message)
-        self.code = code
+    """A rejected image; `key` names its text in messages.MESSAGES."""
+    def __init__(self, key: str, code: str = "invalid_image"):
+        super().__init__(text(key))
+        self.key, self.code = key, code
 
 
 def normalize_image(data: bytes, *, max_bytes: int = MAX_BYTES,
@@ -24,17 +27,17 @@ def normalize_image(data: bytes, *, max_bytes: int = MAX_BYTES,
     if min(max_bytes, max_pixels, max_edge) <= 0:
         raise ValueError("image limits must be positive")
     if not data:
-        raise ImageValidationError("画像が空です。JPEG・PNG・WebPを選んでください。")
+        raise ImageValidationError("empty_image")
     if len(data) > max_bytes:
-        raise ImageValidationError("画像の容量が上限を超えています。小さい画像を選んでください。", "too_large")
+        raise ImageValidationError("image_too_large", "too_large")
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", Image.DecompressionBombWarning)
             with Image.open(io.BytesIO(data), formats=FORMATS) as source:
                 if source.width * source.height > max_pixels:
-                    raise ImageValidationError("画像の画素数が上限を超えています。", "too_large")
+                    raise ImageValidationError("too_many_pixels", "too_large")
                 if getattr(source, "n_frames", 1) != 1:
-                    raise ImageValidationError("アニメーション画像には対応していません。", "unsupported")
+                    raise ImageValidationError("animated", "unsupported")
                 source.load()
                 oriented = ImageOps.exif_transpose(source)
                 rgba = oriented.convert("RGBA")
@@ -46,11 +49,11 @@ def normalize_image(data: bytes, *, max_bytes: int = MAX_BYTES,
     except ImageValidationError:
         raise
     except (Image.DecompressionBombWarning, Image.DecompressionBombError) as error:
-        raise ImageValidationError("画像の画素数が安全上の上限を超えています。", "too_large") from error
+        raise ImageValidationError("pixel_bomb", "too_large") from error
     except UnidentifiedImageError as error:
-        raise ImageValidationError("JPEG・PNG・WebPを選んでください。HEICはJPEGへ変換してください。", "unsupported") from error
+        raise ImageValidationError("unsupported", "unsupported") from error
     except (OSError, ValueError, SyntaxError) as error:
-        raise ImageValidationError("画像を読み込めませんでした。壊れていない別の画像を選んでください。") from error
+        raise ImageValidationError("corrupt") from error
 
 
 def dib_bytes(image: Image.Image) -> bytes:

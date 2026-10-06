@@ -19,6 +19,7 @@ SnapPaste は、スマホで撮った写真やライブラリの画像を、同�
 - **送る前に確認**：写真を選んだだけでは送信されません。プレビューを見てから「PCへ送信する」を押します。
 - **貼り付けやすく整える**：撮影時の向き（EXIF）を反映し、長辺1920pxまでに縮小します。透過部分は白背景になります。
 - **位置情報などを残さない**：画素から画像を作り直すため、EXIF・GPS・XMP・ICCなどのメタデータは貼り付ける画像に含まれません。
+- **日本語と英語に対応**：画面はブラウザの言語に、ターミナルの表示はPCの言語設定に合わせます。画面右上のボタンでも切り替えられます。
 - **ローカルで完結**：外部サービスには送りません。既定では画像をディスクにも保存しません。
 
 ## クイックスタート
@@ -27,7 +28,7 @@ Windows 10/11 と Python 3.10 以上が必要です。PowerShell で実行しま
 
 ```powershell
 py -m venv snappaste-env
-snappaste-env\Scripts\python -m pip install https://github.com/anpanmanj987-hub/SnapPaste/archive/refs/tags/v0.1.0a4.zip
+snappaste-env\Scripts\python -m pip install https://github.com/anpanmanj987-hub/SnapPaste/archive/refs/tags/v0.1.0a5.zip
 snappaste-env\Scripts\python -m snappaste --host 192.168.1.20
 ```
 
@@ -64,7 +65,7 @@ macOS・Linuxでは `--dry-run` を付けて起動します。転送・向きの
 
 ```sh
 python3 -m venv snappaste-env
-snappaste-env/bin/python -m pip install https://github.com/anpanmanj987-hub/SnapPaste/archive/refs/tags/v0.1.0a4.zip
+snappaste-env/bin/python -m pip install https://github.com/anpanmanj987-hub/SnapPaste/archive/refs/tags/v0.1.0a5.zip
 snappaste-env/bin/python -m snappaste --dry-run
 ```
 
@@ -76,7 +77,7 @@ snappaste-env/bin/python -m snappaste --dry-run
 
 ## 動作確認の状況
 
-- **自動テスト**：49件。GitHub ActionsでWindows・macOS・Linux × Python 3.10 / 3.12 / 3.14 を実行しています。
+- **自動テスト**：59件。GitHub ActionsでWindows・macOS・Linux × Python 3.10 / 3.12 / 3.14 を実行しています。
 - **Windows実機**：2026年10月6日に Windows 11 で、HTTPで送った写真が向きを補正された状態でクリップボードに入ること、SnapPasteを終了した後も別のアプリ（.NET）から同じ画像を読み出せること、PCのロック中は成功と表示せずに失敗を返すことを確認しました。
 - **未確認**：実際のスマートフォンからLAN経由で送る操作、Paint・Word・PowerPointなど個別のアプリへの貼り付け。
 

@@ -9,9 +9,9 @@ from snappaste import __version__
 
 
 class CLITests(unittest.TestCase):
-    def run_cli(self, *args, encoding=None):
+    def run_cli(self, *args, encoding=None, lang="ja"):
         root = Path(__file__).resolve().parents[1]
-        environment = dict(os.environ, PYTHONPATH=str(root / "src"))
+        environment = dict(os.environ, PYTHONPATH=str(root / "src"), SNAPPASTE_LANG=lang)
         if encoding is not None:
             environment["PYTHONIOENCODING"] = encoding
         return subprocess.run([sys.executable, "-m", "snappaste", *args],
@@ -37,6 +37,12 @@ class CLITests(unittest.TestCase):
         result = self.run_cli("--help", encoding="utf-8")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("スマホの写真", result.stdout)
+
+    def test_english_help_when_requested(self):
+        result = self.run_cli("--help", encoding="utf-8", lang="en")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("send phone photos to the Windows image clipboard", result.stdout)
+        self.assertNotIn("スマホ", result.stdout)
 
     def test_version_is_available_without_server(self):
         result = self.run_cli("--version")
