@@ -86,7 +86,7 @@ class NativeClipboardWriter:
                 if attempt + 1 < self.attempts:
                     time.sleep(self.retry_delay)
             if not opened:
-                raise ClipboardError("クリップボードが使用中です。少し待って再送してください。")
+                raise ClipboardError("クリップボードを開けません。PCがロック中か、他のアプリが使用中です。")
             if not self.user32.EmptyClipboard():
                 raise self._error("EmptyClipboard")
             if not self.user32.SetClipboardData(8, memory):  # CF_DIB

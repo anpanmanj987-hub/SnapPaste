@@ -1,72 +1,98 @@
 # SnapPaste
 
-スマホで撮影・選択した写真を、Windows PCの画像クリップボードへ送る小さなローカルツールです。ブラウザでプレビューを確かめてから送信し、PCのアプリで `Ctrl+V` で貼り付けます。スマホ用アプリや外部画像処理サービスは不要です。
+[![CI](https://github.com/anpanmanj987-hub/SnapPaste/actions/workflows/ci.yml/badge.svg)](https://github.com/anpanmanj987-hub/SnapPaste/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776ab)
+![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4)
 
-**0.1.0a3 / MIT / アルファ版。** [English](README.en.md)
+**撮る。確かめる。送る。あとはPCで `Ctrl+V`。**
 
-0.1.0a3ではWindows等の出力文字コードで日本語ヘルプが落ちる問題を修正しました。検証結果と実機で未確認の項目は [検証記録](docs/VALIDATION.md) に記載しています。
+SnapPaste は、スマホで撮った写真やライブラリの画像を、同じWi-FiにあるWindows PCのクリップボードへ直接送るツールです。ホワイトボードやメモ、書類を撮って、そのままPowerPointやチャットに貼り付けられます。メールや自分宛てのチャット、クラウドストレージを経由する必要はありません。
 
-## インストール
+[English README](README.en.md)
 
-Python 3.10以上が必要です。このディレクトリを取得して、Windows PowerShellで実行します。
+![接続後の画面（左）と、送信前のプレビュー（右）](docs/images/snappaste.png)
+
+## 特長
+
+- **スマホにアプリ不要**：PCに表示されるQRコードを読み取れば、ブラウザからすぐ使えます。
+- **送る前に確認**：写真を選んだだけでは送信されません。プレビューを見てから「PCへ送信する」を押します。
+- **貼り付けやすく整える**：撮影時の向き（EXIF）を反映し、長辺1920pxまでに縮小します。透過部分は白背景になります。
+- **位置情報などを残さない**：画素から画像を作り直すため、EXIF・GPS・XMP・ICCなどのメタデータは貼り付ける画像に含まれません。
+- **ローカルで完結**：外部サービスには送りません。既定では画像をディスクにも保存しません。
+
+## クイックスタート
+
+Windows 10/11 と Python 3.10 以上が必要です。PowerShell で実行します。
 
 ```powershell
-py -m venv .venv
-.venv\Scripts\python -m pip install .
-.venv\Scripts\python -m snappaste --help
+py -m venv snappaste-env
+snappaste-env\Scripts\python -m pip install https://github.com/anpanmanj987-hub/SnapPaste/archive/refs/tags/v0.1.0a4.zip
+snappaste-env\Scripts\python -m snappaste --host 192.168.1.20
 ```
 
-既定では `127.0.0.1:8766` だけに待ち受けます。スマホから使うときは、PCとスマホを同じネットワークにつなぎ、**PCのLAN IPv4アドレス**を指定してください。Windowsの `ipconfig` で確認できます。
+`192.168.1.20` は例です。`ipconfig` の「IPv4 アドレス」に表示される、自分のPCのアドレスに置き換えてください。ターミナルにQRコードが表示されるので、同じWi-Fiにつないだスマホで読み取ります。
+
+1. 「写真を撮る」か「写真を選ぶ」で画像を選び、プレビューを確認します。
+2. 「PCへ送信する」を押します。
+3. 「PCのクリップボードに画像をコピーしました」と表示されたら、PCの貼り付けたいアプリで `Ctrl+V` を押します。
+
+終了は `Ctrl+C` です。QRコードと参加URLにはこの起動中だけ有効な秘密のトークンが含まれるので、他人には共有しないでください。再起動するとトークンは変わります。
+
+すべてのインターフェイスで待ち受ける場合は、QRコードに載せるアドレスも指定します。
 
 ```powershell
-.venv\Scripts\python -m snappaste --host 192.168.1.20
+snappaste-env\Scripts\python -m snappaste --host 0.0.0.0 --advertise 192.168.1.20
 ```
 
-上のアドレスは例です。自分のPCのアドレスへ置き換えてください。全インターフェイスで待ち受ける場合は、QRに表示するアドレスも明示します。
+### うまくつながらないとき
 
-```powershell
-.venv\Scripts\python -m snappaste --host 0.0.0.0 --advertise 192.168.1.20
-```
+- PCとスマホが同じネットワークにあるか確認してください。ゲストWi-Fiの端末間通信の制限やVPNがあると届きません。
+- Windowsファイアウォールの確認が出たら、プライベートネットワークでの受信を許可してください。
+- PCがロック中のときは、Windowsの仕様でクリップボードにコピーできません。ロックを解除してから送り直してください。
 
-起動時のQRまたは参加URLをスマホで開きます。カメラで撮るかライブラリから選び、プレビュー後に「PCへ送信する」を押してください。**コピー完了の表示が出た後**にPCで貼り付けます。`Ctrl+C` で受信ホストを終了します。QRと参加URLはこの起動中の操作権限を含むため、他人へ共有しないでください。再起動するとコードが変わります。
+## 対応する画像と上限
 
-## 動作確認モード
+- JPEG、PNG、静止画のWebPに対応しています。HEICはJPEGに変換してから送ってください（iPhoneのSafariは通常、送信時にJPEGへ変換します）。
+- 受け付けるのは25 MiBまで、5000万画素までです。小さい画像は拡大しません。
+- `--max-edge`（縮小後の長辺、最大8192px）、`--max-mib`、`--max-pixels` で変更できます。受信容量と入力画素数は上の値より大きくはできません。
+- 元画像のICCプロファイルは変換せずに取り除くため、広色域の写真では色味が変わることがあります。
 
-macOS/Linuxでは `--dry-run` の明示が必要です。Windowsでも指定できます。転送・向き補正・縮小・DIB生成まで実行しますが、**クリップボード更新も画像の保存も行いません**。画面と完了メッセージにもdry-runを表示します。
+## 動作確認モード（Windows以外）
+
+macOS・Linuxでは `--dry-run` を付けて起動します。転送・向きの補正・縮小・クリップボード用データの生成までを行いますが、クリップボードは更新せず、画像も保存しません。
 
 ```sh
-python3 -m venv .venv
-.venv/bin/python -m pip install .
-.venv/bin/python -m snappaste --dry-run
+python3 -m venv snappaste-env
+snappaste-env/bin/python -m pip install https://github.com/anpanmanj987-hub/SnapPaste/archive/refs/tags/v0.1.0a4.zip
+snappaste-env/bin/python -m snappaste --dry-run
 ```
 
-## 画像と上限
+## セキュリティ
 
-- JPEG、PNG、静止WebP。HEICはJPEGへ変換してください。アニメーションと対応外形式は拒否します。
-- 受信上限25MiB、入力上限50,000,000画素。長辺1920px以内、縦横比を維持し、小さい画像は拡大しません。
-- EXIFの向きを反映し、透過は白背景に合成します。Windowsには24bit RGBの `CF_DIB` としてコピーします。
-- 画素から画像を作り直し、元のEXIF/GPS/XMP/ICC/コメントなどを出力へ引き継ぎません。元画像のICC色変換は行わないため、広色域の写真では色が変わることがあります。
-- 原本はホストへ送信されます。元画像に含まれるメタデータは**ホストで処理した後**に除去します。既定ではディスクに保存しません。
+- 通信は暗号化されないHTTPです。家庭内など信頼できるネットワークだけで使い、ポートをインターネットに公開しないでください。
+- 起動ごとのトークンに加えて、HostとOriginを厳密に確認します。画像の処理は同時に1件、接続は最大8件までです。
+- 元の写真は（メタデータを含めて）PCまで送られ、PC側で取り除かれます。
 
-`--max-edge`、`--max-mib`、`--max-pixels`で上限を変更できます。受信容量・入力画素数は上記の安全上限を超えられません。`--no-qr` でURL表示だけにできます。
+## 動作確認の状況
 
-## ネットワークについて
+- **自動テスト**：49件。GitHub ActionsでWindows・macOS・Linux × Python 3.10 / 3.12 / 3.14 を実行しています。
+- **Windows実機**：2026年10月6日に Windows 11 で、HTTPで送った写真が向きを補正された状態でクリップボードに入ること、SnapPasteを終了した後も別のアプリ（.NET）から同じ画像を読み出せること、PCのロック中は成功と表示せずに失敗を返すことを確認しました。
+- **未確認**：実際のスマートフォンからLAN経由で送る操作、Paint・Word・PowerPointなど個別のアプリへの貼り付け。
 
-LAN通信は平文HTTPです。写真や操作トークンの暗号化を保証しません。信頼できる家庭内などのネットワークで使用し、ポートをインターネットへ公開しないでください。外部CDN、解析、クラウド、画像処理サービスには接続しません。
+詳しくは [検証記録](docs/VALIDATION.md) と [設計メモ](docs/DESIGN.md) を参照してください。
 
-ホストは起動ごとのトークンと厳密なHost/Originを確認します。画像処理は同時に1件、接続は最大8件です。読取タイムアウトは既定10秒です。ブラウザのカメラ導線は `input type=file` を使い、`getUserMedia`を必要としません。撮影・選択画面の表示はスマホのブラウザによって異なります。
-
-接続できない場合はPCのIPv4、同じWi-Fi、ホストの起動、Windowsファイアウォールのプライベートネットワーク設定を確認してください。ゲストWi-Fiの端末間隔離やVPNで接続できない場合があります。
-
-## 検証と開発
+## 開発
 
 ```sh
-python -m pip install .
+git clone https://github.com/anpanmanj987-hub/SnapPaste.git
+cd SnapPaste
+python -m pip install -e .
 python -m unittest discover -s tests -v
-python -m pip install build
-python -m build
 ```
 
-自動テストは画像処理、DIB行配置、実HTTPの認証・制限、CLI、Win32メモリ所有権の失敗分岐を対象とします。Win32の境界だけをfakeにしたテストはWindows実機の証明ではありません。**Windows実機の貼り付けと実スマホの撮影は未検証です。** 各検証の実施結果は [検証記録](docs/VALIDATION.md) と [実装報告](docs/IMPLEMENTATION-REPORT.md) を確認してください。
+不具合の報告や改善の提案は [Issues](https://github.com/anpanmanj987-hub/SnapPaste/issues) へお願いします。変更履歴は [CHANGELOG](CHANGELOG.md) にあります。
 
-[設計](docs/DESIGN.md) · [公開手順](docs/PUBLISHING.md) · [引継ぎ](docs/HANDOFF.md)
+## ライセンス
+
+[MIT](LICENSE)

@@ -4,19 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "snappaste"
-version = "0.1.0a3"
+version = "0.1.0a4"
 description = "Send a phone photo to the Windows image clipboard over a local network"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
 dependencies = ["Pillow>=12.3.0,<13", "qrcode>=8.2,<9"]
+keywords = ["clipboard", "windows", "smartphone", "photo", "lan"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Programming Language :: Python :: 3",
   "Operating System :: Microsoft :: Windows",
   "Topic :: Multimedia :: Graphics",
 ]
+
+[project.urls]
+Homepage = "https://github.com/anpanmanj987-hub/SnapPaste"
+Issues = "https://github.com/anpanmanj987-hub/SnapPaste/issues"
+Changelog = "https://github.com/anpanmanj987-hub/SnapPaste/blob/main/CHANGELOG.md"
 
 [project.scripts]
 snappaste = "snappaste.__main__:main"

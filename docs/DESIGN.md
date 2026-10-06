@@ -1,6 +1,6 @@
 # SnapPaste design / 設計
 
-Version: `0.1.0a2`. Python 3.10+, Pillow 12.3, qrcode 8.2, standard-library HTTP server, local HTML/CSS/JavaScript. This directory is an independent source project with no dependency on sibling projects.
+Python 3.10+, Pillow 12.3, qrcode 8.2, standard-library HTTP server, local HTML/CSS/JavaScript.
 
 ## Data flow
 
@@ -32,6 +32,8 @@ One Windows worker creates a message-only native `STATIC` window and pumps messa
 
 The writer allocates movable global memory, locks/copies/unlocks it, and only then attempts to open/empty/write the clipboard. Open contention retries at most 15 times with 50ms pauses (14 pauses maximum). A successful `SetClipboardData(CF_DIB, handle)` transfers ownership to the OS. The application frees only handles that did not transfer; it always attempts to close an opened clipboard. Zero from `GlobalUnlock` with last error zero is treated as a successful final unlock.
 
+While the Windows session is locked, `OpenClipboard` fails with `ERROR_ACCESS_DENIED` for desktop applications. After the bounded retries this surfaces as a "clipboard unavailable" failure that names the lock screen as a likely cause; it is never reported as a copy.
+
 If `EmptyClipboard` succeeds and a subsequent native call fails, the previous clipboard contents can be lost. If closing fails after a successful transfer, the response reports failure but the transferred memory is still owned by Windows. A five-second worker wait limits how long the HTTP request waits; an already-running native API call cannot be forcibly cancelled and may complete later. The timeout message directs users to inspect the PC. These cases do not display a copy-success message.
 
 Dry-run produces the same normalized DIB and discards it. It neither writes any OS clipboard nor saves a processed image. Both `/api/status` and upload success responses identify dry-run.
@@ -44,7 +46,7 @@ A fresh `secrets.token_urlsafe(32)` capability is generated per run. The printed
 
 Static content and APIs require one exact Host header. APIs require one valid token. Mutations additionally require one exact Origin header; missing/`null`, cross-origin and duplicate values are rejected. Cross-origin OPTIONS requests are rejected and no CORS response grants access. The UI uses fetch's default `cors` mode: explicitly setting `same-origin` mode together with `no-referrer` can make a POST Origin header `null`.
 
-Only raw-body POST uploads are accepted. Content-Length must be a single positive ASCII integer and Transfer-Encoding is refused. Default bounds are 25MiB compressed upload, 50 million input pixels, 1920px output edge, 8 simultaneous connections and 1 processing job. A socket inactivity timeout covers request parsing; a monotonic total deadline covers the complete upload body. Default timeout is 10 seconds. Rejected unread bodies cannot become later requests because every response closes the connection. There is no multipart parser, input filename path, or automatic image disk storage.
+Only raw-body POST uploads are accepted. Content-Length must be a single positive ASCII integer and Transfer-Encoding is refused. Default bounds are 25MiB compressed upload, 50 million input pixels, 1920px output edge, 8 simultaneous connections and 1 processing job. A socket inactivity timeout covers request parsing; a monotonic total deadline covers the complete upload body. Default timeout is 10 seconds. Rejected unread bodies cannot become later requests because every response closes the connection. Before closing, the host discards what remains of a rejected body (up to the upload limit, for at most two seconds); closing a socket with unread data makes Windows send a reset, and the phone would then see a network error instead of the reply. There is no multipart parser, input filename path, or automatic image disk storage.
 
 Assets are local. CSP restricts scripts/styles/connections to the same origin, permits blob images for preview, disables framing and forms, and sets a fixed base policy. Responses use no-store, no-referrer and nosniff. This does not provide network encryption: original photo bytes and capabilities traverse plain HTTP, including original metadata before host normalization.
 

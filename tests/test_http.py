@@ -116,6 +116,11 @@ class HTTPTests(unittest.TestCase):
         self.assertIn(b" 408 ", sock.recv(4096))
         sock.close()
 
+    def test_rejection_reply_survives_unread_photo(self):
+        # Windows resets a socket closed with unread data; the reply must still arrive.
+        for _ in range(10):
+            self.assertEqual(self.request(body=b"x" * 1000, headers={"X-SnapPaste-Token": "old"})[0], 401)
+
     def test_busy_processing_is_rejected(self):
         self.server.processing.acquire()
         try:

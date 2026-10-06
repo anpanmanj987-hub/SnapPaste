@@ -5,6 +5,8 @@ import subprocess
 import sys
 import unittest
 
+from snappaste import __version__
+
 
 class CLITests(unittest.TestCase):
     def run_cli(self, *args, encoding=None):
@@ -39,7 +41,7 @@ class CLITests(unittest.TestCase):
     def test_version_is_available_without_server(self):
         result = self.run_cli("--version")
         self.assertEqual(result.returncode, 0)
-        self.assertIn("0.1.0a3", result.stdout)
+        self.assertIn(__version__, result.stdout)
 
     @unittest.skipIf(sys.platform == "win32", "native mode is valid on Windows")
     def test_other_platform_requires_explicit_dry_run(self):

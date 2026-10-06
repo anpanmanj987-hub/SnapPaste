@@ -70,6 +70,28 @@ def read_upload(stream, connection, length: int, timeout: float) -> bytes:
     return b"".join(chunks)
 
 
+DRAIN_BYTES = MAX_BYTES + 64 * 1024
+DRAIN_SECONDS = 2.0
+
+
+def discard_body(stream, connection, length: int, timeout: float = DRAIN_SECONDS) -> None:
+    """Read and drop an unread request body within a short, bounded time."""
+    deadline = time.monotonic() + timeout
+    remaining = min(length, DRAIN_BYTES)
+    try:
+        while remaining > 0:
+            left = deadline - time.monotonic()
+            if left <= 0:
+                return
+            connection.settimeout(left)
+            chunk = stream.read1(min(65536, remaining))
+            if not chunk:
+                return
+            remaining -= len(chunk)
+    except OSError:
+        return
+
+
 class SnapPasteServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
@@ -122,6 +144,26 @@ class RequestHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         # No request logging: path, capability and photo bytes remain private.
         pass
+
+    def parse_request(self):
+        ok = super().parse_request()
+        lengths = self.headers.get_all("Content-Length", []) if ok else []
+        raw = lengths[0] if len(lengths) == 1 else ""
+        self.unread = int(raw) if raw.isascii() and raw.isdigit() and len(raw) <= 10 else 0
+        return ok
+
+    def finish(self):
+        # Rejections reply before reading the photo. Closing a socket with unread
+        # data makes Windows reset the connection, and the phone then sees a network
+        # error instead of the reply (for example "scan the new QR code").
+        try:
+            if getattr(self, "unread", 0) and not self.wfile.closed:
+                self.wfile.flush()
+                discard_body(self.rfile, self.connection, self.unread)
+        except OSError:
+            pass
+        finally:
+            super().finish()
 
     def _reply(self, status, content, mime="application/json; charset=utf-8"):
         if isinstance(content, dict):
@@ -216,6 +258,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             self._error(429, "別の画像を処理中です。少し待って再送してください。")
             return
         try:
+            self.unread = 0  # A failed read means a broken or slow peer: do not wait for it again.
             try:
                 content = read_upload(self.rfile, self.connection, length, self.server.config.socket_timeout)
             except (socket.timeout, OSError):
@@ -240,7 +283,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             status = 413 if error.code == "too_large" else 415 if error.code == "unsupported" else 422
             self._error(status, str(error))
         except ClipboardError:
-            self._error(503, "クリップボードへコピーできませんでした。PCで状態を確認し、少し待って再送してください。")
+            self._error(503, "クリップボードへコピーできませんでした。PCがロック中でないか確認し、少し待って再送してください。")
         except Exception:
             self._error(500, "画像を処理できませんでした。別の画像で再試行してください。")
         finally:
